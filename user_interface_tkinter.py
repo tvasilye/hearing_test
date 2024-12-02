@@ -30,3 +30,4 @@ class HearingTestApp:
     def start_test(self):
         messagebox.showinfo("Test Started", "The test will now start. Click 'Yes' every time you hear a sound.")
         self.play_button.config(state=tk.DISABLED)
+

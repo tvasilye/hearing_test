@@ -4,10 +4,9 @@ import sounddevice
 
 
 class SineTone:
+	#we create  class to access 
 
 	def __init__(self, frequency=1000, amplitude=0.5, duration_seconds=1.5, sample_rate=48000):
-		#nyquist theorem - twice as the highest frequency that you want to reproduce
-		#in practice, audio system use standart sampling rates, from 44.1kHz to 48 kHz
 		self.frequency = frequency
 		self.amplitude = amplitude
 		self.duration = duration_seconds
@@ -30,20 +29,14 @@ def measure_audiogram(frequency: float) -> tuple[float, float]:
 	upper_threshold = math.nan
 	lower_threshold = math.nan
 	try:
-
-		"""
-		Exercise 4.2
-		"""
-
 		# 1.
 		sine_tone = SineTone(frequency)
 
 		# 2.
 		#amplitude = 0
-		amplitude = 1e-4
+		amplitude = 1e-2
 		while amplitude < 1:
 			sine_tone.amplitude = amplitude 
-
 			sine_tone.play_tone()
 			response = input("Did you hear the sound? ('y' or 'n')")
 			response = response.strip().lower()
@@ -55,7 +48,7 @@ def measure_audiogram(frequency: float) -> tuple[float, float]:
 				amplitude*=1.5
 			else:
 				return(math.nan, math.nan)
-		# 4.n
+
 		amplitude*=0.8
 		while amplitude > 0:
 			sine_tone.amplitude = amplitude
@@ -74,16 +67,10 @@ def measure_audiogram(frequency: float) -> tuple[float, float]:
 
 		return (lower_threshold, upper_threshold)
 
-	# the finally-block is executed always when control flow leaves the try-block
 	finally:
 		print('Reached upper threshold', upper_threshold)
 		print('Reached lower threshold', lower_threshold)
 
-# 3.
-
-"""
-Exercise 4.3.
-"""
 
 def all_frequences(frequencies):
 	measurement_matrix = numpy.zeros((2, len(frequencies)))
@@ -99,6 +86,7 @@ frequencies_all = [125, 250, 500, 1000, 2000, 4000, 8000, 16000]
 frequencies = [125, 250]
 
 measurement_matrix = all_frequences(frequencies)
+print(measurement_matrix)
 
 A_ref = 1.0
 amplitudes_in_db = [20*numpy.log10(A / A_ref) for A in measurement_matrix]
