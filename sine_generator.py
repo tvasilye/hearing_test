@@ -34,7 +34,7 @@ def measure_audiogram(frequency: float) -> tuple[float, float]:
 
 		# 2.
 		#amplitude = 0
-		amplitude = 1e-2
+		amplitude = 1e-4
 		while amplitude < 1:
 			sine_tone.amplitude = amplitude 
 			sine_tone.play_tone()

@@ -51,6 +51,8 @@ class HearingTestApp:
         self.label = tk.Label(master, text="Hearing Test", font=("Arial", 18))
         self.label.pack(pady=20)
 
+        self.label2 = tk.Label(master, text="did you hear the sound?",font=("Arial", 18))
+
         self.start_button = tk.Button(master, text="Start Test", command=self.start_test, font=("Arial", 14))
         self.start_button.pack(pady=10)
 
@@ -71,7 +73,7 @@ class HearingTestApp:
 
         self.frequencies = [125, 250, 500, 1000, 2000, 4000, 8000]
         self.current_frequency_index = 0
-        self.current_amplitude = 1e-2
+        self.current_amplitude = 1e-4
         self.measurement_matrix = numpy.zeros((len(self.frequencies), 2))
         
         self.userID = get_next_user_id()
@@ -92,6 +94,10 @@ class HearingTestApp:
             messagebox.showerror("Error", "Please enter your age.")
             return
         
+        self.age_label.pack_forget()
+        self.age_entry.pack_forget()
+        self.label2.pack(pady=10, before=self.button_frame)
+
         self.start_button.config(state=tk.DISABLED)
         self.yes_button.config(state=tk.NORMAL)
         self.no_button.config(state=tk.NORMAL)
@@ -102,14 +108,18 @@ class HearingTestApp:
     def test_next_frequency(self):
         if self.current_frequency_index < len(self.frequencies):
             frequency = self.frequencies[self.current_frequency_index]
+
             self.label.config(text=f"Testing {frequency} Hz")
+            print(f"Starting test for {frequency} Hz")
+            #self.master.update_idletasks() 
             self.finding_upper_threshold = True
             self.upper_threshold = None
             self.lower_threshold = None
-            self.current_amplitude = 1e-2
+            self.current_amplitude = 1e-4
             self.play_tone(frequency)
         else:
             self.finish_test()
+
 
     def play_tone(self, frequency):
         self.current_tone = SineTone(frequency, amplitude=self.current_amplitude)
@@ -121,29 +131,39 @@ class HearingTestApp:
 
     def record_response(self, response):
         frequency = self.frequencies[self.current_frequency_index]
+
         if self.finding_upper_threshold:
             if response == "y":
                 self.upper_threshold = self.current_amplitude
+                print(f"Upper threshold set at {self.upper_threshold} for {frequency} Hz")
                 self.finding_upper_threshold = False
                 self.current_amplitude *= 0.8
             else:
                 self.current_amplitude *= 1.5
+                print(f"Increasing amplitude to {self.current_amplitude}") 
                 if self.current_amplitude >= 1:
                     self.finding_upper_threshold = False
                     self.current_amplitude = self.upper_threshold if self.upper_threshold else 1e-2
+                    print(f"Upper threshold fallback to {self.current_amplitude} for {frequency} Hz")
         else:
             if response == "n":
                 self.lower_threshold = self.current_amplitude
+                print(f"Lower threshold set at {self.lower_threshold} for {frequency} Hz")
                 self.measurement_matrix[self.current_frequency_index] = [self.lower_threshold, self.upper_threshold]
                 write_to_csv('hearing_test_results.csv', [self.userID, self.age.get(), frequency, self.lower_threshold, self.upper_threshold])
+                
                 self.current_frequency_index += 1
+                self.test_next_frequency()
             else:
                 self.current_amplitude *= 0.8
+                print(f"Decreasing amplitude to {self.current_amplitude} for {frequency} Hz")
 
         if self.current_frequency_index < len(self.frequencies):
             self.play_tone(self.frequencies[self.current_frequency_index])
+            #self.test_next_frequency()
         else:
             self.finish_test()
+            print(self.measurement_matrix)
 
     def finish_test(self):
         self.yes_button.config(state=tk.DISABLED)
@@ -171,8 +191,11 @@ class HearingTestApp:
         canvas_widget.pack()
 
 if __name__ == "__main__":
-    if not os.path.exists('hearing_test_results.csv'):
-        with open('hearing_test_results.csv', 'w', newline='') as csvfile:
+    script_directory = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(script_directory, 'hearing_test_results.csv')
+
+    if not os.path.exists(file_path):
+        with open(file_path, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(['userID', 'age', 'frequency', 'lowerThreshold', 'upperThreshold'])
 
