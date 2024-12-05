@@ -61,6 +61,20 @@ class HearingTestApp:
         self.button_frame = tk.Frame(master)
         self.button_frame.pack(pady=20)
 
+
+        self.disclaimer = tk.Label(
+        master,
+        text="The results of this hearing test are influenced by external factors such as the quality and calibration "
+                "of your audio playback equipment (e.g., speakers or headphones) and environmental noise. This test is "
+                "For accurate hearing diagnostics, please consult a licensed audiologist.",
+        font=("Arial", 10),
+        fg="darkred",
+        wraplength=400,
+        justify="center"
+        )
+        self.disclaimer.pack(side=tk.BOTTOM, pady=10)
+
+
         self.yes_button = tk.Button(self.button_frame, text="Yes", command=lambda: self.record_response("y"), 
                                     state=tk.DISABLED, bg="green", fg="white", font=("Arial", 14))
         self.yes_button.pack(side=tk.LEFT, padx=10)
