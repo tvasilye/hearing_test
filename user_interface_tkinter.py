@@ -45,13 +45,15 @@ def get_next_user_id(filename='hearing_test_results.csv'):
 class HearingTestApp:
     def __init__(self, master):
         self.master = master
+        self.file_path = file_path
+
         master.title("Hearing Test")
         master.geometry("500x500")
 
         self.label = tk.Label(master, text="Hearing Test", font=("Arial", 18))
         self.label.pack(pady=20)
 
-        self.label2 = tk.Label(master, text="did you hear the sound?",font=("Arial", 18))
+        self.label2 = tk.Label(master, text="Could you hear the sound?",font=("Arial", 18))
 
         self.start_button = tk.Button(master, text="Start Test", command=self.start_test, font=("Arial", 14))
         self.start_button.pack(pady=10)
@@ -96,6 +98,7 @@ class HearingTestApp:
         
         self.age_label.pack_forget()
         self.age_entry.pack_forget()
+        self.start_button.pack_forget()
         self.label2.pack(pady=10, before=self.button_frame)
 
         self.start_button.config(state=tk.DISABLED)
@@ -120,7 +123,6 @@ class HearingTestApp:
         else:
             self.finish_test()
 
-
     def play_tone(self, frequency):
         self.current_tone = SineTone(frequency, amplitude=self.current_amplitude)
         self.current_tone.play_tone()
@@ -130,40 +132,54 @@ class HearingTestApp:
             self.current_tone.play_tone()
 
     def record_response(self, response):
+
         frequency = self.frequencies[self.current_frequency_index]
 
         if self.finding_upper_threshold:
-            if response == "y":
-                self.upper_threshold = self.current_amplitude
-                print(f"Upper threshold set at {self.upper_threshold} for {frequency} Hz")
-                self.finding_upper_threshold = False
-                self.current_amplitude *= 0.8
-            else:
-                self.current_amplitude *= 1.5
-                print(f"Increasing amplitude to {self.current_amplitude}") 
-                if self.current_amplitude >= 1:
-                    self.finding_upper_threshold = False
-                    self.current_amplitude = self.upper_threshold if self.upper_threshold else 1e-2
-                    print(f"Upper threshold fallback to {self.current_amplitude} for {frequency} Hz")
+            self._find_upper_threshold(frequency, response)
         else:
-            if response == "n":
-                self.lower_threshold = self.current_amplitude
-                print(f"Lower threshold set at {self.lower_threshold} for {frequency} Hz")
-                self.measurement_matrix[self.current_frequency_index] = [self.lower_threshold, self.upper_threshold]
-                write_to_csv('hearing_test_results.csv', [self.userID, self.age.get(), frequency, self.lower_threshold, self.upper_threshold])
-                
-                self.current_frequency_index += 1
-                self.test_next_frequency()
-            else:
-                self.current_amplitude *= 0.8
-                print(f"Decreasing amplitude to {self.current_amplitude} for {frequency} Hz")
+            self._find_lower_threshold(frequency, response)
 
         if self.current_frequency_index < len(self.frequencies):
             self.play_tone(self.frequencies[self.current_frequency_index])
-            #self.test_next_frequency()
         else:
             self.finish_test()
-            print(self.measurement_matrix)
+
+    def _find_upper_threshold(self, frequency, response):
+
+        if response == "y":
+            self.upper_threshold = self.current_amplitude
+            print(f"Upper threshold set at {self.upper_threshold} for {frequency} Hz")
+            self.finding_upper_threshold = False 
+            self.current_amplitude *= 0.8 
+        else:
+            self.current_amplitude *= 1.5
+            print(f"Increasing amplitude to {self.current_amplitude} for {frequency} Hz")
+            if self.current_amplitude >= 1:
+                self.finding_upper_threshold = False
+                self.current_amplitude = self.upper_threshold if self.upper_threshold else 1e-2
+                print(f"Upper threshold fallback to {self.current_amplitude} for {frequency} Hz")
+
+    def _find_lower_threshold(self, frequency, response):
+
+        if response == "n":
+            self.lower_threshold = self.current_amplitude
+            print(f"Lower threshold set at {self.lower_threshold} for {frequency} Hz")
+
+            self.measurement_matrix[self.current_frequency_index] = [self.lower_threshold, self.upper_threshold]
+            
+            write_to_csv(
+                self.file_path,
+                [self.userID, self.age.get(), frequency, self.lower_threshold, self.upper_threshold],
+            )
+
+            self.current_frequency_index += 1
+            self.test_next_frequency()
+            self.finding_upper_threshold = True 
+            self.current_amplitude = 1e-4
+        else:
+            self.current_amplitude *= 0.8
+            print(f"Decreasing amplitude to {self.current_amplitude} for {frequency} Hz")
 
     def finish_test(self):
         self.yes_button.config(state=tk.DISABLED)
@@ -195,7 +211,7 @@ if __name__ == "__main__":
     file_path = os.path.join(script_directory, 'hearing_test_results.csv')
 
     if not os.path.exists(file_path):
-        with open(file_path, 'w', newline='') as csvfile:
+        with open(file_path, 'a', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(['userID', 'age', 'frequency', 'lowerThreshold', 'upperThreshold'])
 
